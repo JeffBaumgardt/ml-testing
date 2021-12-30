@@ -1,7 +1,5 @@
 import * as React from "react";
 import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-cpu";
-import "@tensorflow/tfjs-backend-webgl";
 import * as cocoSSD from "@tensorflow-models/coco-ssd";
 
 import classData from "./classData";
@@ -128,6 +126,8 @@ export default function App() {
 
   React.useEffect(() => {
     setModalLoadStart(window.performance.now());
+    tf.setBackend("webgl");
+    console.log(tf.getBackend());
     tf.ready().then(() => {
       loadModel();
     });
@@ -186,7 +186,10 @@ export default function App() {
               className="image-position"
             />
           </div>
-          <p>Image inference time: {(secondTimeStamp - firstTimeStamp).toFixed(2)}ms</p>
+          <p>
+            Image inference time:{" "}
+            {(secondTimeStamp - firstTimeStamp).toFixed(2)}ms
+          </p>
           <p>Average inference time: {averageTime.toFixed(2)}ms</p>
         </>
       ) : null}
