@@ -33,8 +33,11 @@ const getImageDimensions = (
   });
 };
 
+type ImageLoadTime = Record<string, number>;
+
 export default function App() {
-  const lastImageRef = React.useRef<HTMLImageElement | null>(null);
+  const [imageCount, setImageCount] = React.useState(0);
+  const [imageLoadTimes, setImageLoadTimes] = React.useState<ImageLoadTime>({});
   const [image, setImage] = React.useState<HTMLImageElement | null>(null);
   const [canvasDimension, setCanvasDimension] = React.useState({
     height: 0,
@@ -112,7 +115,6 @@ export default function App() {
     const randomImage = images[Math.floor(Math.random() * images.length)];
 
     image.src = randomImage;
-    lastImageRef.current = image;
 
     getImageDimensions(image, 600, 600).then(({ height, width }) => {
       setCanvasDimension({
@@ -121,6 +123,7 @@ export default function App() {
       });
       setImage(image);
     });
+    setImageCount((imageCount) => imageCount + 1);
   }, []);
 
   React.useEffect(() => {
@@ -138,13 +141,34 @@ export default function App() {
     }
   }, [image, runPredictions]);
 
+  React.useEffect(() => {
+    if (image && firstTimeStamp > 0 && secondTimeStamp > 0) {
+      setImageLoadTimes((prevLoadTimes) => ({
+        ...prevLoadTimes,
+        [image.src]: secondTimeStamp - firstTimeStamp,
+      }));
+    }
+  }, [firstTimeStamp, image, secondTimeStamp]);
+
+  const averageTime = React.useMemo(() => {
+    const times = Object.keys(imageLoadTimes).reduce(
+      (prevImageTime, currentImage) => {
+        const currentTime = imageLoadTimes[currentImage];
+        return prevImageTime + currentTime;
+      },
+      0
+    );
+    console.log(times, imageLoadTimes);
+    return times / imageCount;
+  }, [imageLoadTimes, imageCount]);
+
   return (
     <div style={{ margin: 10 }}>
       {model ? (
         <div style={{ marginBottom: 10 }}>
           <button onClick={loadImage}>Load Random Image</button>
           <span style={{ marginLeft: 10 }}>
-            Modal Load Time: {modalLoadEnd - modalLoadStart}ms
+            Modal Load Time: {(modalLoadEnd - modalLoadStart).toFixed(2)}ms
           </span>
         </div>
       ) : (
@@ -162,7 +186,8 @@ export default function App() {
               className="image-position"
             />
           </div>
-          <p>Total time: {secondTimeStamp - firstTimeStamp}ms</p>
+          <p>Image inference time: {(secondTimeStamp - firstTimeStamp).toFixed(2)}ms</p>
+          <p>Average inference time: {averageTime.toFixed(2)}ms</p>
         </>
       ) : null}
     </div>
